@@ -1,54 +1,80 @@
 'use strict';
 
 const express = require('express');
-const app = express();
+const request = require('request');
 const ViberBot = require('viber-bot').Bot;
 const BotEvents = require('viber-bot').Events;
-
-const bot = new ViberBot({
-    authToken: "519aa0d6bde7e344-31aa29a1ff2098fe-3b24637725a8a416",
-    name: "Noble Educare Centre",
-    avatar: "https://viber.com/avatar.jpg"
-});
-
 const TextMessage = require('viber-bot').Message.Text;
+const winston = require('winston');
+const toYAML = require('winston-console-formatter');
 
-bot.on(BotEvents.MESSAGE_RECEIVED, (message, response) => {
-    const textMessage = new TextMessage('Thank you for your message!');
-    response.send(textMessage);
-});
+const app = express();
 
-// Capture raw request body before any other middleware processes it
-app.use((req, res, next) => {
-    let data = '';
-    req.on('data', chunk => {
-        data += chunk;
+// Create logger
+function createLogger() {
+    const logger = new winston.Logger({
+        level: "debug"
     });
-    req.on('end', () => {
-        req.rawBody = data;
-        next();
+
+    logger.add(winston.transports.Console, toYAML.config());
+    return logger;
+}
+
+const logger = createLogger();
+
+const bot = new ViberBot(logger, {
+    authToken: "Your account access token goes here",
+    name: "Is It Up",
+    avatar: "http://api.adorable.io/avatar/200/isitup"
+});
+
+function say(response, message) {
+    response.send(new TextMessage(message));
+}
+
+bot.onSubscribe(response => {
+    say(response, `Hi there ${response.userProfile.name}. I am ${bot.name}! Feel free to ask me if a web site is down for everyone or just you. Just send me a name of a website and I'll do the rest!`);
+});
+
+function checkUrlAvailability(botResponse, urlToCheck) {
+    if (urlToCheck === '') {
+        say(botResponse, 'I need a URL to check');
+        return;
+    }
+
+    say(botResponse, 'One second...Let me check!');
+
+    const url = urlToCheck.replace(/^http:\/\//, '');
+    request('http://isup.me/' + url, function (error, requestResponse, body) {
+        if (error || requestResponse.statusCode !== 200) {
+            say(botResponse, 'Something is wrong with isup.me.');
+            return;
+        }
+
+        if (body.search('is up') !== -1) {
+            say(botResponse, 'Hooray! ' + urlToCheck + '. looks good to me.');
+        } else if (body.search('Huh') !== -1) {
+            say(botResponse, 'Hmmmmm ' + urlToCheck + '. does not look like a website to me. Typo? please follow the format `test.com`');
+        } else if (body.search('down from here') !== -1) {
+            say(botResponse, 'Oh no! ' + urlToCheck + '. is broken.');
+        } else {
+            say(botResponse, 'Snap...Something is wrong with isup.me.');
+        }
     });
+}
+
+bot.onTextMessage(/./, (message, response) => {
+    checkUrlAvailability(response, message.text);
 });
 
-// Log raw request body
-app.use((req, res, next) => {
-    console.log("Raw Request Body:", req.rawBody);
-    next();
-});
-
-// Viber middleware should come next
-app.use('/viber', bot.middleware());
-
-// Then the body parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Middleware
+app.use('/viber/webhook', bot.middleware());
 
 const port = process.env.PORT || 8080;
-const webhookUrl = "http://18.141.198.28:8080/viber";
 
 app.listen(port, () => {
-    console.log(`Server is listening on port ${port}`);
-    bot.setWebhook(webhookUrl).catch(error => {
-        console.error('Error setting the webhook:', JSON.stringify(error, null, 2));
+    logger.info(`Server is listening on port ${port}`);
+    bot.setWebhook(process.env.NOW_URL || process.env.HEROKU_URL || "Your public accessible URL here").catch(error => {
+        logger.error('Error setting the webhook:', error);
     });
 });
