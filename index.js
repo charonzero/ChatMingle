@@ -18,12 +18,12 @@ bot.on(BotEvents.MESSAGE_RECEIVED, (message, response) => {
 app.use('/viber', bot.middleware());
 
 const port = process.env.PORT || 8080;
-const webhookUrl = "https://6d7d-45-125-6-94.ngrok.io/viber";
+const webhookUrl = "https://18.141.198.28:8080/viber";
 
 
 app.listen(port, () => {
     console.log(`Server is listening on port ${port}`);
-    
+
     bot.setWebhook(webhookUrl).catch(error => {
         console.error('Error setting the webhook:', error);
     });
