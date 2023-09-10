@@ -1,0 +1,28 @@
+{
+	"dependencies": {
+		"axios": "^1.5.0",
+		"bcrypt": "^5.1.1",
+		"connect-mongo": "^5.0.0",
+		"dotenv": "^16.3.1",
+		"express": "^4.18.2",
+		"express-rate-limit": "^6.10.0",
+		"express-session": "^1.17.3",
+		"helmet": "^7.0.0",
+		"mongodb": "^5.8.1",
+		"mongoose": "^7.5.0",
+		"next-auth": "^4.23.1",
+		"node-telegram-bot-api": "^0.61.0",
+		"nodemailer": "^6.9.5",
+		"viber-bot": "^1.0.18"
+	},
+	"name": "chatbot",
+	"version": "1.0.0",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"start": "node index.js"
+	},
+	"author": "",
+	"license": "ISC",
+	"description": ""
+}
